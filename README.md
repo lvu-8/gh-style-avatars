@@ -1,3 +1,3 @@
 # gh-style-avatars
-# gh-style-avatars
-# gh-style-avatars
+
+We can make avatars like in GitHub.
