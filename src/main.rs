@@ -15,28 +15,40 @@ impl AvatarGenerator {
     }
 
     pub fn generate_avatar(&mut self, input: &str) -> RgbImage {
-        let hash: Vec<u8> = self.hash_input(input);
-        let length: usize = hash.len();
-        let color: Rgb<u8> = Rgb([hash[length - 1], hash[length - 2], hash[length - 3]]);
-
-        let bin: String = self.get_bin_by_hash(hash.clone());
-        let mut chars: Chars<'_> = bin.chars();
+        let hash = self.hash_input(input);
+        let color = self.extract_color(&hash);
+        let bin = self.get_bin_by_hash(hash.clone());
+        let mut chars = bin.chars();
 
         let mut img = RgbImage::from_pixel(SIZE, SIZE, color);
+        self.fill_avatar(&mut img, &mut chars);
+
+        img
+    }
+
+    fn extract_color(&self, hash: &[u8]) -> Rgb<u8> {
+        let length = hash.len();
+        let mut color = Rgb([0, 0, 0]);
+
+        for i in 1..4 {
+            color.0[i - 1] = hash[length - i];
+        }
+
+        color
+    }
+
+    fn fill_avatar(&self, img: &mut RgbImage, chars: &mut Chars<'_>) {
         for y in 0..SIZE {
-            for x in 0..(CENTER) {
+            for x in 0..CENTER {
                 if chars.next() == Some('1') {
                     img.put_pixel(x, y, WHITE);
                     img.put_pixel(SIZE - x - 1, y, WHITE);
                 }
             }
-
             if chars.next() == Some('1') {
                 img.put_pixel(CENTER, y, WHITE);
             }
         }
-
-        img
     }
 
     fn hash_input(&self, input: &str) -> Vec<u8> {
@@ -52,7 +64,7 @@ impl AvatarGenerator {
 
 fn main() {
     let mut generator = AvatarGenerator::new();
-    let avatar = generator.generate_avatar("key");
+    let avatar = generator.generate_avatar("a");
     avatar
         .save("test/avatar.png")
         .expect("Failed to save avatar image");

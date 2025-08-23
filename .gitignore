@@ -1,1 +1,8 @@
-./target
+# Cargo
+/target/
+**/*.rs.bk
+
+# IDE
+.idea/
+.vscode/
+*.swp
