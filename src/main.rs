@@ -18,7 +18,7 @@ impl AvatarGenerator {
 
     pub fn generate_avatar(&mut self, hash: Vec<u8>) -> RgbImage {
         let (color_bytes, rest) = hash.split_at(3);
-        let color = Rgb([color_bytes[0], color_bytes[1], color_bytes[2]]);
+        let color = Rgb(color_bytes[0..3].try_into().unwrap());
         let mut iterator = BitIter::new(rest);
 
         let mut img = RgbImage::from_pixel(SIZE, SIZE, color);
@@ -35,6 +35,7 @@ impl AvatarGenerator {
                     img.put_pixel(SIZE - x - 1, y, WHITE);
                 }
             }
+
             if iterator.next().unwrap() == 1 {
                 img.put_pixel(CENTER, y, WHITE);
             }
@@ -44,6 +45,7 @@ impl AvatarGenerator {
 
 fn hash_input(input: &str) -> Vec<u8> {
     let mut hasher = Md5::new();
+
     hasher.update(input.as_bytes());
     hasher.finalize().to_vec()
 }
