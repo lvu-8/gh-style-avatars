@@ -1,5 +1,9 @@
+
+mod bit_iterator;
+
 use image::{Rgb, RgbImage};
 use md5::{Digest, Md5};
+use bit_iterator::BitIter;
 
 const WHITE: Rgb<u8> = Rgb([255, 255, 255]);
 
@@ -13,8 +17,7 @@ impl AvatarGenerator {
         AvatarGenerator {}
     }
 
-    pub fn generate_avatar(&mut self, input: &str) -> RgbImage {
-        let hash = self.hash_input(input);
+    pub fn generate_avatar(&mut self, hash: Vec<u8>) -> RgbImage {
         let color = self.extract_color(&hash);
 
         let mut img = RgbImage::from_pixel(SIZE, SIZE, color);
@@ -25,52 +28,43 @@ impl AvatarGenerator {
 
     fn extract_color(&self, hash: &[u8]) -> Rgb<u8> {
         let length = hash.len();
-        let mut color = Rgb([0, 0, 0]);
-
-        for i in 0..3 {
-            color.0[i] = hash[length - i - 1];
-        }
-
-        color
+        Rgb([hash[length - 1], hash[length - 2], hash[length - 3]])
     }
 
     fn fill_avatar(&self, img: &mut RgbImage, hash: &[u8]) {
-        let mut bit_index = 0;
+        let mut iterator = BitIter::new(hash);
 
         for y in 0..SIZE {
             for x in 0..CENTER {
-                if self.bit_at(hash, bit_index) == 1 {
+                if iterator.next().unwrap() == 1 {
                     img.put_pixel(x, y, WHITE);
                     img.put_pixel(SIZE - x - 1, y, WHITE);
                 }
-                bit_index += 1;
             }
-            if self.bit_at(hash, bit_index) == 1 {
+            if iterator.next().unwrap() == 1 {
                 img.put_pixel(CENTER, y, WHITE);
             }
-            bit_index += 1;
         }
     }
+}
 
-    fn bit_at(&self, hash: &[u8], i: usize) -> u8 {
-        let byte = hash[i / 8];
-        
-        let bit = 7 - (i % 8);
-        (byte >> bit) & 1
-    }
-
-    fn hash_input(&self, input: &str) -> Vec<u8> {
-        let mut hasher = Md5::new();
-        hasher.update(input.as_bytes());
-        hasher.finalize().to_vec()
-    }
+fn hash_input(input: &str) -> Vec<u8> {
+    let mut hasher = Md5::new();
+    hasher.update(input.as_bytes());
+    hasher.finalize().to_vec()
 }
 
 fn main() {
     let mut generator = AvatarGenerator::new();
-    let avatar = generator.generate_avatar("a");
-    avatar
-        .save("test/avatar.png")
-        .expect("Failed to save avatar image");
-    println!("Avatar generated and saved as avatar.png");
+    let keys = vec!["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"];
+
+    for i in keys {
+        let hash = hash_input(i);
+        let avatar = generator.generate_avatar(hash);
+        let filename = format!("test/avatar_{}.png", i);
+
+        avatar.save(&filename).expect("Failed to save avatar image");
+
+        println!("Avatar generated and saved as {}", filename);
+    }
 }
