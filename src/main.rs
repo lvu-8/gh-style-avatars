@@ -1,9 +1,8 @@
-
 mod bit_iterator;
 
+use bit_iterator::BitIter;
 use image::{Rgb, RgbImage};
 use md5::{Digest, Md5};
-use bit_iterator::BitIter;
 
 const WHITE: Rgb<u8> = Rgb([255, 255, 255]);
 
@@ -18,22 +17,17 @@ impl AvatarGenerator {
     }
 
     pub fn generate_avatar(&mut self, hash: Vec<u8>) -> RgbImage {
-        let color = self.extract_color(&hash);
+        let (color_bytes, rest) = hash.split_at(3);
+        let color = Rgb([color_bytes[0], color_bytes[1], color_bytes[2]]);
+        let mut iterator = BitIter::new(rest);
 
         let mut img = RgbImage::from_pixel(SIZE, SIZE, color);
-        self.fill_avatar(&mut img, &hash);
+        self.fill_avatar(&mut img, &mut iterator);
 
         img
     }
 
-    fn extract_color(&self, hash: &[u8]) -> Rgb<u8> {
-        let length = hash.len();
-        Rgb([hash[length - 1], hash[length - 2], hash[length - 3]])
-    }
-
-    fn fill_avatar(&self, img: &mut RgbImage, hash: &[u8]) {
-        let mut iterator = BitIter::new(hash);
-
+    fn fill_avatar(&self, img: &mut RgbImage, iterator: &mut BitIter<'_>) {
         for y in 0..SIZE {
             for x in 0..CENTER {
                 if iterator.next().unwrap() == 1 {
