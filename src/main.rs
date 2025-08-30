@@ -16,7 +16,7 @@ impl AvatarGenerator {
         AvatarGenerator {}
     }
 
-    pub fn generate_avatar(&mut self, hash: Vec<u8>) -> RgbImage {
+    pub fn generate_avatar(&self, hash: Vec<u8>) -> RgbImage {
         let (color_bytes, rest) = hash.split_at(3);
         let color = Rgb(color_bytes[0..3].try_into().unwrap());
         let mut iterator = BitIter::new(rest);
@@ -50,17 +50,40 @@ fn hash_input(input: &str) -> Vec<u8> {
     hasher.finalize().to_vec()
 }
 
-fn main() {
-    let mut generator = AvatarGenerator::new();
-    let keys = vec!["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"];
+use std::env;
+use std::fs;
+use std::path::Path;
 
-    for i in keys {
-        let hash = hash_input(i);
-        let avatar = generator.generate_avatar(hash);
-        let filename = format!("test/avatar_{}.png", i);
+fn sanitize_filename(s: &str) -> String {
+    s.chars()
+        .map(|c| if c.is_ascii_alphanumeric() { c } else { '_' })
+        .collect()
+}
 
-        avatar.save(&filename).expect("Failed to save avatar image");
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mut args = env::args().skip(1);
 
-        println!("Avatar generated and saved as {}", filename);
+    let key = match args.next() {
+        Some(k) => k,
+        None => {
+            eprintln!("Require an input string as an argument.");
+            std::process::exit(1);
+        }
+    };
+
+    let generator = AvatarGenerator::new();
+    let hash = hash_input(&key);
+    let avatar = generator.generate_avatar(hash);
+
+    let safe = sanitize_filename(&key);
+    let filename = format!("test/avatar_{}.png", safe);
+
+    if let Some(parent) = Path::new(&filename).parent() {
+        fs::create_dir_all(parent)?;
     }
+
+    avatar.save(&filename)?;
+    println!("Avatar saved({})", filename);
+
+    Ok(())
 }
